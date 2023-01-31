@@ -1,0 +1,3 @@
+.envrc
+storage/*
+!storage/.gitkeep
