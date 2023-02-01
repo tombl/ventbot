@@ -136,4 +136,4 @@ export const getWebhook = memo((id: bigint) => {
   return discord.getWebhook(bot, id);
 });
 
-// await discord.startBot(bot);
+await discord.startBot(bot);
