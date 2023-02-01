@@ -1,8 +1,9 @@
 import * as discord from "discordeno";
 import * as base64 from "std/encoding/base64url.ts";
 import * as bot from "./bot.ts";
-import { DEV_GUILD, HOST } from "./env.ts";
+import { DEV_GUILD, host } from "./env.ts";
 import { createAuthorisation, getHash } from "./internal.ts";
+import * as log from "std/log/mod.ts";
 
 const commands: discord.CreateApplicationCommand[] = [{
   type: discord.ApplicationCommandTypes.ChatInput,
@@ -55,14 +56,15 @@ const commandHandlers: Record<
         data: {
           embeds: [{
             title: "message verification",
-            url: `${HOST}/help#verification`,
             description: hash === null
               ? "this message was not sent via ventbot"
               : undefined,
             fields: hash === null ? undefined : [{
               name: "hash",
               value: base64.encode(hash),
-              inline: true,
+            }, {
+              name: "what does this mean?",
+              value: `check out ${host("/help/verification")}`,
             }],
           }],
           flags: discord.ApplicationCommandFlags.Ephemeral,
@@ -90,7 +92,8 @@ const actionHandlers: Record<
           flags: discord.ApplicationCommandFlags.Ephemeral,
           embeds: [{
             description:
-              "click the button below to add this channel to your ventbot.\nthen, whenever you want to vent, just go to https://vent.tombl.dev",
+              `click the button below to add this channel to your ventbot.
+then, whenever you want to vent, just go to ${host("/").href})`,
           }],
           components: [{
             type: discord.MessageComponentTypes.ActionRow,
@@ -98,7 +101,7 @@ const actionHandlers: Record<
               type: discord.MessageComponentTypes.Button,
               style: discord.ButtonStyles.Link,
               label: "add to vent",
-              url: `${HOST}/add/${base64.encode(token)}`,
+              url: host(`/add/${base64.encode(token)}`).href,
             }],
           }],
         },
@@ -108,6 +111,7 @@ const actionHandlers: Record<
 };
 
 export async function updateCommands(global: boolean) {
+  log.info(`updating ${global ? "global" : "guild"} commands`);
   if (global) {
     await discord.upsertGlobalApplicationCommands(bot.bot, commands);
   } else {
@@ -118,7 +122,6 @@ export async function updateCommands(global: boolean) {
 export function handleInteraction(interaction: discord.Interaction) {
   switch (interaction.type) {
     case discord.InteractionTypes.Ping: {
-      console.log("ping");
       discord.sendInteractionResponse(
         bot.bot,
         interaction.id,
@@ -133,7 +136,7 @@ export function handleInteraction(interaction: discord.Interaction) {
       if (handler) {
         handler(interaction);
       } else {
-        console.warn(`No handler for command ${JSON.stringify(name)}`);
+        log.warning(`No handler for command ${JSON.stringify(name)}`);
       }
       break;
     }
@@ -141,7 +144,7 @@ export function handleInteraction(interaction: discord.Interaction) {
     case discord.InteractionTypes.MessageComponent: {
       const { customId } = interaction.data!;
       if (!customId) {
-        console.warn("Interaction missing customId: ", interaction);
+        log.warning("Interaction missing customId: ", interaction);
         return;
       }
       const colon = customId.indexOf(":");
@@ -151,12 +154,12 @@ export function handleInteraction(interaction: discord.Interaction) {
       if (handler) {
         handler(interaction, ...handlerArgs);
       } else {
-        console.warn(`No handler for action ${JSON.stringify(customId)}`);
+        log.warning(`No handler for action ${JSON.stringify(customId)}`);
       }
       break;
     }
     default:
-      console.warn(
+      log.warning(
         "Unhandled interaction type: ",
         discord.InteractionTypes[interaction.type],
       );

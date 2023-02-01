@@ -4,6 +4,7 @@ import {
 } from "@/routes/channels/[channel].tsx";
 import { memo } from "@/utils/memo.ts";
 import * as discord from "discordeno";
+import * as log from "std/log/mod.ts";
 import { DISCORD_TOKEN } from "./env.ts";
 import { handleInteraction } from "./interactions.ts";
 
@@ -12,21 +13,21 @@ export const bot = discord.createBot({
   intents: discord.Intents.GuildMessages | discord.Intents.MessageContent |
     discord.Intents.GuildMessageReactions,
   events: {
-    // debug(...args) {
-    //   console.info(args.join(" "));
-    // },
+    debug(...args) {
+      log.debug(...args);
+    },
     ready(_bot, { user }) {
-      console.log(
+      log.info(
         `attached to discord gateway as ${user.username}#${user.discriminator}`,
       );
     },
     interactionCreate(_bot, interaction) {
-      console.log("interaction", interaction.user.username);
+      log.debug("interaction", interaction.user.username);
       handleInteraction(interaction);
     },
     async messageCreate(_bot, message) {
       if (hasListeners(message.channelId)) {
-        console.log("message", message.tag, message.content);
+        log.debug("message", message.tag, message.content);
         getMessage.insert(
           [message.id, message.channelId],
           Promise.resolve(message),
@@ -69,7 +70,7 @@ export const bot = discord.createBot({
       );
     },
     async reactionAdd(_bot, { messageId, channelId }) {
-      console.log("reaction", messageId, channelId);
+      log.debug("reaction", messageId, channelId);
       getMessage.invalidate(messageId, channelId);
       if (!hasListeners(channelId)) return;
       notifySubscribers({
@@ -78,7 +79,7 @@ export const bot = discord.createBot({
       }, channelId);
     },
     async reactionRemove(_bot, { messageId, channelId }) {
-      console.log("reaction", messageId, channelId);
+      log.debug("reaction", messageId, channelId);
       getMessage.invalidate(messageId, channelId);
       if (!hasListeners(channelId)) return;
       notifySubscribers({
@@ -87,7 +88,7 @@ export const bot = discord.createBot({
       }, channelId);
     },
     async reactionRemoveAll(_bot, { messageId, channelId }) {
-      console.log("reaction", messageId, channelId);
+      log.debug("reaction", messageId, channelId);
       getMessage.invalidate(messageId, channelId);
       if (!hasListeners(channelId)) return;
       notifySubscribers({
@@ -96,7 +97,7 @@ export const bot = discord.createBot({
       }, channelId);
     },
     async reactionRemoveEmoji(_bot, { messageId, channelId }) {
-      console.log("reaction", messageId, channelId);
+      log.debug("reaction", messageId, channelId);
       getMessage.invalidate(messageId, channelId);
       if (!hasListeners(channelId)) return;
       notifySubscribers({
@@ -108,11 +109,11 @@ export const bot = discord.createBot({
 });
 
 export const getMessage = memo((id: bigint, channelId: bigint) => {
-  console.log("fetching message", id, "in", channelId);
+  log.debug("fetching message", id, "in", channelId);
   return discord.getMessage(bot, channelId, id);
 });
 export const getLastMessages = memo(async (channelId: bigint) => {
-  console.log("fetching last messages");
+  log.debug("fetching last messages");
   const messages = await discord.getMessages(bot, channelId, { limit: 10 });
   return messages.map((msg) => {
     getMessage.insert([msg.id, channelId], Promise.resolve(msg));
@@ -120,19 +121,19 @@ export const getLastMessages = memo(async (channelId: bigint) => {
   }).reverse();
 });
 export const getChannel = memo((id: bigint) => {
-  console.log("fetching channel", id);
+  log.debug("fetching channel", id);
   return discord.getChannel(bot, id);
 });
 export const getUser = memo((id: bigint) => {
-  console.log("fetching user", id);
+  log.debug("fetching user", id);
   return discord.getUser(bot, id);
 });
 export const getGuild = memo((id: bigint) => {
-  console.log("fetching guild", id);
+  log.debug("fetching guild", id);
   return discord.getGuild(bot, id);
 });
 export const getWebhook = memo((id: bigint) => {
-  console.log("fetching webhook", id);
+  log.debug("fetching webhook", id);
   return discord.getWebhook(bot, id);
 });
 
