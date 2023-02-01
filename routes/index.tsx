@@ -63,21 +63,20 @@ export default function ({ data }: PageProps<Data>) {
         <title>ventbot</title>
       </Head>
 
-      <div class="flex flex-col max-w-screen-md min-h-screen px-8 py-6 mx-auto text-white bg-slate-3">
+      <div class="flex flex-col max-w-screen-md min-h-screen p-4 mx-auto text-neutral-12 bg-slate-3">
         <main class="flex-1">
-          <h1 class="mb-6 text-3xl font-bold md:text-4xl">ventbot</h1>
+          <h1 class="mb-4 text-3xl font-bold md:text-4xl">ventbot</h1>
 
-          <div class="absolute left-0 w-screen bg-neutral-2">
-            <div class="flex w-full max-w-screen-md px-8 mx-auto">
+          <div class="absolute left-0 w-screen bg-neutral-3 hover:bg-neutral-4">
+            <div class="flex w-full max-w-screen-md px-4 mx-auto">
               <span class="py-2 font-bold">name:</span>
               <NameInput
-                class="flex-1 block p-2 bg-transparent"
+                class="flex-1 block p-2 bg-transparent focus:(outline-none ring ring-brand-7)"
                 defaultValue="vent"
               />
             </div>
           </div>
-
-          {/* px-8 + p-2 = h-10 */}
+          {/* spacer: px-8 + p-2 = h-10 */}
           <div class="h-10"></div>
 
           <div class="mt-4 space-y-4">
@@ -85,30 +84,25 @@ export default function ({ data }: PageProps<Data>) {
               <section>
                 <h2 class="mb-2 text-xl font-bold truncate">{guild}</h2>
                 {channels.map(({ channel, name, topic }) => (
-                  <>
-                    <p>
-                      <a
-                        href={`/channels/${channel}`}
-                        class="text-xl font-bold underline truncate"
-                      >
+                    <a href={`/channels/${channel}`} class="block">
+                      <h3 class="text-xl font-bold underline truncate">
                         #{name ?? "unknown-channel"}
-                      </a>
-                    </p>
+                      </h3>
                     {topic
                       ? (
-                        <p class="truncate text-neutral-400">
+                        <p class="truncate text-neutral-11">
                           <Markdown source={topic} />
                         </p>
                       )
                       : null}
-                  </>
+                    </a>
                 ))}
               </section>
             ))}
           </div>
         </main>
 
-        <footer class="space-x-1 font-medium text-neutral-500">
+        <footer class="space-x-1 font-medium text-neutral-11">
           <a href="/help" class="underline">
             help
           </a>

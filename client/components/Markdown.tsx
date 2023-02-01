@@ -1,4 +1,3 @@
-import { api } from "@/api.ts";
 import { LOADING, usePromise } from "@/client/utils/promise.ts";
 import { differenceFromNow } from "@/utils/date.ts";
 import { parse, RuleTypesExtended } from "discord-markdown-parser";
@@ -7,20 +6,15 @@ import { useMemo, useState } from "preact/hooks";
 
 function Mention({ type, id }: { type: "user" | "channel"; id: string }) {
   const name = usePromise(useMemo(async () => {
-    switch (type) {
-      case "user":
-        return await api.ui.getUserName(BigInt(id)) ?? "invalid-user";
-      case "channel":
-        return await api.ui.getChannelName(BigInt(id)) ??
-          "invalid-channel";
-      default: {
-        const _: never = type;
-      }
+    const res = await fetch(`/api/${type}?id=${id}`);
+    if (res.status !== 200) {
+      throw new Error(`Failed to fetch ${type} name: ${await res.text()}`);
     }
+    return res.text();
   }, [type, id]));
 
   return (
-    <span class={"px-0.5 text-brand-500 bg-brand-500 bg-opacity-20"}>
+    <span class={"px-0.5 text-brand-11 bg-brand-3"}>
       {type === "channel" ? "#" : "@"}
       {name === LOADING ? "" : name}
     </span>
@@ -41,7 +35,7 @@ function Spoiler({ children }: { children: ComponentChildren }) {
 
   return (
     <span
-      class={`py-0.5 bg-neutral-2 transition-colors ${
+      class={`py-0.5 bg-neutral-3 transition-colors ${
         show ? "bg-opacity-25" : "text-transparent select-none"
       }`}
       onClick={(e) => {
@@ -110,7 +104,7 @@ function Node({ content }: { content: Content }) {
       );
     case "inlineCode":
       return (
-        <code class="p-0.5 text-sm bg-neutral-2">
+        <code class="p-0.5 text-sm bg-neutral-3">
           <Node content={content.content!} />
         </code>
       );
@@ -124,19 +118,19 @@ function Node({ content }: { content: Content }) {
     case "autolink":
     case "link":
       return (
-        <a href={content.target!} class="underline text-brand-500">
+        <a href={content.target!} class="underline text-brand-11">
           <Node content={content.content!} />
         </a>
       );
     case "blockQuote":
       return (
-        <blockquote class="pl-2 border-l-2 border-neutral-500">
+        <blockquote class="pl-2 border-l-2 border-neutral-6">
           <Node content={content.content!} />
         </blockquote>
       );
     case "codeBlock":
       return (
-        <pre class="p-2 bg-neutral-2">
+        <pre class="p-2 bg-neutral-3 border-1 border-neutral-6">
           <code class="text-sm">{content.content}</code>
         </pre>
       );

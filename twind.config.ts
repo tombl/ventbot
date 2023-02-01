@@ -1,10 +1,10 @@
 import { defineConfig } from "@twind/core";
 import presetAutoprefix from "https://esm.sh/@twind/preset-autoprefix@1.0.7";
-import * as colors from "https://esm.sh/@twind/preset-radix-ui@1.0.7/colors";
+// @deno-types="https://unpkg.com/@twind/preset-radix-ui@1.0.7/colors.d.ts"
+import * as colors from "https://unpkg.com/@twind/preset-radix-ui@1.0.7/colors.js";
 import darkColor from "https://esm.sh/@twind/preset-radix-ui@1.0.7/darkColor";
 import presetTailwind from "https://esm.sh/@twind/preset-tailwind@1.1.4/base";
 
-console.log(Object.keys(colors));
 
 export default defineConfig({
   presets: [

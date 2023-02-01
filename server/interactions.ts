@@ -1,8 +1,8 @@
 import * as discord from "discordeno";
 import { assert } from "@/utils/assert.ts";
 import * as bot from "./bot.ts";
-import { createAuthorisation } from "./internal.ts";
-import * as b64 from "std/encoding/base64url.ts";
+import { createAuthorisation, getHash } from "./internal.ts";
+import * as base64 from "std/encoding/base64url.ts";
 
 const DEV_GUILD = Deno.env.get("DEV_GUILD");
 assert(DEV_GUILD !== undefined, "$DEV_GUILD is not set");
@@ -16,7 +16,7 @@ const commands: discord.UpsertApplicationCommands[] = [{
   description: "create a ventbot in this channel",
 }, {
   type: discord.ApplicationCommandTypes.Message,
-  name: "verify ventbot",
+  name: "verify",
   description: "get the ventbot id of this message",
 }];
 
@@ -47,6 +47,27 @@ const commandHandlers: Record<
       },
     );
   },
+
+  async verify(interaction) {
+    const message = interaction.data!.resolved!.messages!.first()!;
+
+    const hash = getHash(message.id);
+    const content = hash === null // TODO: swap for embed, link help page
+      ? `this message was not sent via ventbot`
+      : `hash: ${base64.encode(hash)}`;
+    await discord.sendInteractionResponse(
+      bot.bot,
+      interaction.id,
+      interaction.token,
+      {
+        type: discord.InteractionResponseTypes.ChannelMessageWithSource,
+        data: {
+          content,
+          flags: discord.ApplicationCommandFlags.Ephemeral,
+        },
+      },
+    );
+  },
 };
 
 const actionHandlers: Record<
@@ -55,33 +76,31 @@ const actionHandlers: Record<
   (interaction: discord.Interaction, ...args: any[]) => void
 > = {
   async sendlink(interaction, channelId: string) {
-    const dm = await discord.getDmChannel(bot.bot, interaction.user.id);
-
     const token = createAuthorisation(interaction.user.id, BigInt(channelId));
 
-    const msg = await discord.sendMessage(bot.bot, dm.id, {
-      embeds: [{
-        description:
-          "click the button below to add this channel to your ventbot.\nthen, whenever you want to vent, just go to https://vent.tombl.dev",
-      }],
-      components: [{
-        type: discord.MessageComponentTypes.ActionRow,
-        components: [{
-          type: discord.MessageComponentTypes.Button,
-          style: discord.ButtonStyles.Link,
-          label: "add to vent",
-          url: `${HOST}/add/${b64.encode(token)}`,
-        }],
-      }],
-    });
-    setTimeout(() => {
-      discord.deleteMessage(bot.bot, dm.id, msg.id);
-    }, 1000 * 60);
     await discord.sendInteractionResponse(
       bot.bot,
       interaction.id,
       interaction.token,
-      { type: discord.InteractionResponseTypes.DeferredUpdateMessage },
+      {
+        type: discord.InteractionResponseTypes.ChannelMessageWithSource,
+        data: {
+          flags: discord.ApplicationCommandFlags.Ephemeral,
+          embeds: [{
+            description:
+              "click the button below to add this channel to your ventbot.\nthen, whenever you want to vent, just go to https://vent.tombl.dev",
+          }],
+          components: [{
+            type: discord.MessageComponentTypes.ActionRow,
+            components: [{
+              type: discord.MessageComponentTypes.Button,
+              style: discord.ButtonStyles.Link,
+              label: "add to vent",
+              url: `${HOST}/add/${base64.encode(token)}`,
+            }],
+          }],
+        },
+      },
     );
   },
 };

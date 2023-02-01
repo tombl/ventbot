@@ -2,7 +2,7 @@ import {
   convertMessage,
   hasListeners,
   notifySubscribers,
-} from "@/routes/ws/messages/[channel].ts";
+} from "@/routes/channels/[channel].tsx";
 import { memo } from "@/utils/memo.ts";
 import * as discord from "discordeno";
 import { handleInteraction } from "./interactions.ts";
@@ -60,14 +60,14 @@ export const bot = discord.createBot({
       }
       await notifySubscribers({
         type: "delete",
-        id: message.id,
+        id: message.id.toString(),
       }, message.channelId);
     },
     async messageDeleteBulk(_bot, { channelId, ids }) {
       for (const id of ids) {
         getMessage.invalidate(id, channelId);
       }
-      await notifySubscribers({ type: "bulkDelete", ids }, channelId);
+      await notifySubscribers({ type: "bulkDelete", ids:ids.map(String) }, channelId);
       getLastMessages.invalidate(channelId);
     },
     async reactionAdd(_bot, { messageId, channelId }) {

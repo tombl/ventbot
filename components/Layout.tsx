@@ -14,12 +14,12 @@ export function Layout(
         <title>ventbot | {title}</title>
       </Head>
       <main
-        class={`py-6 px-8 mx-auto text-white max-w-screen-${
+        class={`p-4 mx-auto text-neutral-12 max-w-screen-${
           fullwidth ? "full" : "md"
         }`}
       >
         <a href="/">ventbot</a>
-        <h1 class="mb-6 text-2xl font-bold md:text-4xl">{title}</h1>
+        <h1 class="mb-4 text-2xl font-bold md:text-4xl">{title}</h1>
         {children}
       </main>
     </>
