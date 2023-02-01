@@ -2,15 +2,15 @@ import { Head } from "$fresh/runtime.ts";
 import { Handlers, PageProps } from "$fresh/server.ts";
 import Messages from "@/islands/Messages.tsx";
 import * as bot from "@/server/bot.ts";
-import { channelInfo, getChannel, sendMessage } from "@/server/internal.ts";
+import * as internal from "@/server/internal.ts";
 import { assert } from "@/utils/assert.ts";
 import * as discord from "discordeno";
 import * as base64 from "std/encoding/base64url.ts";
 import { CookieMap } from "std/http/cookie_map.ts";
 
-export type Packet =
-  | { type: "create"; message: Message }
-  | { type: "update"; message: Message }
+export type Packet<T> =
+  | { type: "create"; message: T }
+  | { type: "update"; message: T }
   | { type: "delete"; id: string }
   | { type: "bulkDelete"; ids: string[] };
 
@@ -21,6 +21,7 @@ export interface Message {
   content: string;
   isBot: boolean;
   isEdited: boolean;
+  canEdit: boolean;
   sent: number;
   reactions: Array<{
     id: string | undefined;
@@ -29,7 +30,7 @@ export interface Message {
   }>;
 }
 
-export function convertMessage(message: discord.Message): Message {
+function convertMessage(message: discord.Message, token: Uint8Array): Message {
   return {
     id: message.id.toString(),
     author: message.authorId.toString(),
@@ -37,6 +38,7 @@ export function convertMessage(message: discord.Message): Message {
     content: message.content,
     isBot: message.isFromBot,
     isEdited: message.editedTimestamp !== undefined,
+    canEdit: internal.canEditMessage(token, message.id),
     sent: message.timestamp,
     reactions: message.reactions?.map((r) => ({
       id: r.emoji.id?.toString(),
@@ -46,19 +48,36 @@ export function convertMessage(message: discord.Message): Message {
   };
 }
 
-const socketMap = new Map<bigint, Set<WebSocket>>();
+const socketMap = new Map<
+  bigint,
+  Set<{ socket: WebSocket; token: Uint8Array }>
+>();
 
 export function hasListeners(channelId: bigint) {
   return socketMap.has(channelId);
 }
 
-export function notifySubscribers(packet: Packet, channelId: bigint) {
+export function notifySubscribers(
+  packet: Packet<discord.Message>,
+  channelId: bigint,
+) {
   const sockets = socketMap.get(channelId);
   if (!sockets) return;
 
-  const packed = JSON.stringify(packet);
-  for (const socket of sockets) {
-    socket.send(packed);
+  for (const { socket, token } of sockets) {
+    switch (packet.type) {
+      case "create":
+      case "update": {
+        const p: Packet<Message> = {
+          ...packet,
+          message: convertMessage(packet.message, token),
+        };
+        socket.send(JSON.stringify(p));
+        break;
+      }
+      default:
+        socket.send(JSON.stringify(packet));
+    }
   }
 }
 interface Data {
@@ -85,7 +104,7 @@ export const handler: Handlers<Data> = {
 
     const token = base64.decode(cookie);
 
-    const info = await channelInfo(token, channelId);
+    const info = await internal.channelInfo(token, channelId);
     assert(info !== null, "invalid token");
 
     if (req.headers.get("upgrade")?.toLowerCase().includes("websocket")) {
@@ -97,9 +116,9 @@ export const handler: Handlers<Data> = {
         .then(async (messages) => {
           for (const id of messages) {
             const message = await bot.getMessage(id, channelId);
-            const packet: Packet = {
+            const packet: Packet<Message> = {
               type: "create",
-              message: convertMessage(message),
+              message: convertMessage(message, token),
             };
             socket.send(JSON.stringify(packet));
           }
@@ -110,10 +129,11 @@ export const handler: Handlers<Data> = {
         sockets = new Set();
         socketMap.set(channelId, sockets);
       }
-      sockets.add(socket);
+      const added = { socket, token };
+      sockets.add(added);
 
       socket.onerror = socket.onclose = () => {
-        sockets!.delete(socket);
+        sockets!.delete(added);
         if (sockets!.size === 0) {
           socketMap.delete(channelId);
         }
@@ -137,10 +157,29 @@ export const handler: Handlers<Data> = {
     }
 
     const token = base64.decode(cookie);
-    assert(getChannel(token).toString() === channel, "invalid token");
+    assert(internal.getChannel(token).toString() === channel, "invalid token");
 
     const { name, content } = await req.json();
-    await sendMessage(token, name, content);
+    await internal.sendMessage(token, name, content);
+    return new Response(null, { status: 200 });
+  },
+  async PATCH(req, ctx) {
+    const { channel } = ctx.params;
+    if (!/^\d+$/.test(channel)) {
+      return ctx.renderNotFound();
+    }
+
+    const cookies = new CookieMap(req);
+    const cookie = cookies.get(`channel_${channel}`);
+    if (cookie === undefined) {
+      return ctx.renderNotFound();
+    }
+
+    const token = base64.decode(cookie);
+    assert(internal.getChannel(token).toString() === channel, "invalid token");
+
+    const { id, content } = await req.json();
+    await internal.editMessage(token, BigInt(id), content);
     return new Response(null, { status: 200 });
   },
 };

@@ -1,5 +1,4 @@
 import {
-  convertMessage,
   hasListeners,
   notifySubscribers,
 } from "@/routes/channels/[channel].tsx";
@@ -33,10 +32,7 @@ export const bot = discord.createBot({
           Promise.resolve(message),
         );
         (await getLastMessages.read(message.channelId))?.push(message.id);
-        notifySubscribers({
-          type: "create",
-          message: convertMessage(message),
-        }, message.channelId);
+        notifySubscribers({ type: "create", message }, message.channelId);
       }
     },
     messageUpdate(_bot, message) {
@@ -45,10 +41,7 @@ export const bot = discord.createBot({
           [message.id, message.channelId],
           Promise.resolve(message),
         );
-        notifySubscribers({
-          type: "update",
-          message: convertMessage(message),
-        }, message.channelId);
+        notifySubscribers({ type: "update", message }, message.channelId);
       }
     },
     async messageDelete(_bot, message) {
@@ -81,7 +74,7 @@ export const bot = discord.createBot({
       if (!hasListeners(channelId)) return;
       notifySubscribers({
         type: "update",
-        message: convertMessage(await getMessage(messageId, channelId)),
+        message: await getMessage(messageId, channelId),
       }, channelId);
     },
     async reactionRemove(_bot, { messageId, channelId }) {
@@ -90,7 +83,7 @@ export const bot = discord.createBot({
       if (!hasListeners(channelId)) return;
       notifySubscribers({
         type: "update",
-        message: convertMessage(await getMessage(messageId, channelId)),
+        message: await getMessage(messageId, channelId),
       }, channelId);
     },
     async reactionRemoveAll(_bot, { messageId, channelId }) {
@@ -99,7 +92,7 @@ export const bot = discord.createBot({
       if (!hasListeners(channelId)) return;
       notifySubscribers({
         type: "update",
-        message: convertMessage(await getMessage(messageId, channelId)),
+        message: await getMessage(messageId, channelId),
       }, channelId);
     },
     async reactionRemoveEmoji(_bot, { messageId, channelId }) {
@@ -108,7 +101,7 @@ export const bot = discord.createBot({
       if (!hasListeners(channelId)) return;
       notifySubscribers({
         type: "update",
-        message: convertMessage(await getMessage(messageId, channelId)),
+        message: await getMessage(messageId, channelId),
       }, channelId);
     },
   },

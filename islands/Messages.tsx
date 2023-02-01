@@ -3,12 +3,18 @@ import { LOADING, usePromise } from "@/client/utils/promise.ts";
 import { useWebsocket } from "@/client/utils/websocket.ts";
 import type { Message, Packet } from "@/routes/channels/[channel].tsx";
 import { memo } from "@/utils/memo.ts";
-import { useCallback, useLayoutEffect, useRef, useState } from "preact/hooks";
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+} from "preact/hooks";
 
 function useMessages(channelId: string): Message[] {
   const [messages, setMessages] = useState<Message[]>([]);
 
-  useWebsocket<Packet>(
+  useWebsocket<Packet<Message>>(
     `/channels/${channelId}`,
     useCallback((packet) => {
       switch (packet.type) {
@@ -76,10 +82,11 @@ const longTime = new Intl.DateTimeFormat(undefined, {
   timeStyle: "short",
 });
 function Message(
-  { message, prev, next }: {
+  { message, prev, next, onEdit }: {
     message: Message;
     prev: Message | undefined;
     next: Message | undefined;
+    onEdit(content: string): void;
   },
 ) {
   const isFirst = prev === undefined ||
@@ -91,14 +98,96 @@ function Message(
     new Date(next.sent).getTime() - new Date(message.sent).getTime() >
       1000 * 60 * 10;
 
+  const sent = new Date(message.sent);
+  const now = new Date();
+  const wasToday = sent.getDate() === now.getDate() &&
+    sent.getMonth() === now.getMonth() &&
+    sent.getFullYear() === now.getFullYear();
+  const yesterday = new Date(now.getTime() - 1000 * 60 * 60 * 24);
+  const wasYesterday = sent.getDate() === yesterday.getDate() &&
+    sent.getMonth() === yesterday.getMonth() &&
+    sent.getFullYear() === yesterday.getFullYear();
+
+  const [editContent, setEditContent] = useState<string | null>(null);
+  const shouldFocusEdit = useRef(false);
+
+  useEffect(() => {
+  }, []);
+
   const content = (
     <>
-      <div class="[overflow-wrap:anywhere]">
-        <Markdown source={message.content} />
-        {message.isEdited
-          ? <span class="ml-1 text-sm text-neutral-11">(edited)</span>
-          : null}
-      </div>
+      {message.canEdit
+        ? (
+          <div
+            class={`absolute top-0 ${
+              editContent === null ? "invisible group-hover:visible" : ""
+            } space-x-1 right-4 bg-neutral-3 px-1 text-sm ${
+              isFirst ? "" : "-translate-y-full"
+            }`}
+          >
+            {editContent === null
+              ? (
+                <button
+                  class="p-1"
+                  onClick={() => {
+                    shouldFocusEdit.current = true;
+                    setEditContent(message.content);
+                  }}
+                >
+                  edit
+                </button>
+              )
+              : null}
+          </div>
+        )
+        : null}
+      {editContent === null
+        ? (
+          <div class="[overflow-wrap:anywhere]">
+            <Markdown source={message.content} />
+            {message.isEdited
+              ? <span class="ml-1 text-sm text-neutral-11">(edited)</span>
+              : null}
+          </div>
+        )
+        : (
+          <>
+            <MessageEntry
+              value={editContent}
+              onInput={setEditContent}
+              placeholder="edit message"
+              onSubmit={() => {
+                onEdit(editContent);
+                setEditContent(null);
+              }}
+              onCancel={() => setEditContent(null)}
+            />
+            <span class="text-sm">
+              <span>
+                escape to{" "}
+                <button
+                  class="text-brand-11 hover:underline"
+                  onClick={() => setEditContent(null)}
+                >
+                  cancel
+                </button>
+              </span>
+              {" | "}
+              <span>
+                enter to{" "}
+                <button
+                  class="text-brand-11 hover:underline"
+                  onClick={() => {
+                    onEdit(editContent);
+                    setEditContent(null);
+                  }}
+                >
+                  save
+                </button>
+              </span>
+            </span>
+          </>
+        )}
       {message.reactions.length === 0 ? null : (
         <div class="my-2 space-x-1">
           {message.reactions.map(({ name, id, count }) => (
@@ -113,19 +202,9 @@ function Message(
     </>
   );
 
-  const sent = new Date(message.sent);
-  const now = new Date();
-  const wasToday = sent.getDate() === now.getDate() &&
-    sent.getMonth() === now.getMonth() &&
-    sent.getFullYear() === now.getFullYear();
-  const yesterday = new Date(now.getTime() - 1000 * 60 * 60 * 24);
-  const wasYesterday = sent.getDate() === yesterday.getDate() &&
-    sent.getMonth() === yesterday.getMonth() &&
-    sent.getFullYear() === yesterday.getFullYear();
-
   return (
     <li
-      class={`group px-4 flex flex-row space-x-4 hover:bg-neutral-2 ${
+      class={`group relative px-4 flex flex-row space-x-4 hover:bg-neutral-2 ${
         isFirst ? "mt-4" : ""
       } ${isLast ? "mb-4" : ""}`}
     >
@@ -135,7 +214,9 @@ function Message(
             <Avatar user={message.author} />
             <div class="flex-auto">
               <div class="space-x-1">
-                <span class="font-bold" title={message.tag}>{message.tag.split("#")[0]}</span>
+                <span class="font-bold" title={message.tag}>
+                  {message.tag.split("#")[0]}
+                </span>
                 <span class="space-x-1 text-sm text-neutral-11">
                   {message.isBot
                     ? <span class="font-bold text-brand-11">bot</span>
@@ -149,7 +230,6 @@ function Message(
                       ? `yesterday at ${shortTime.format(message.sent)}`
                       : longTime.format(message.sent)).toLowerCase()}
                   </span>
-                  {/* TODO: edit */}
                 </span>
               </div>
               {content}
@@ -159,7 +239,7 @@ function Message(
         : (
           <>
             <span
-              class="w-[40px] text-[0.7rem] text-neutral-11 text-center self-center invisible group-hover:visible"
+              class="w-[40px] text-[0.6rem] [-webkit-line-clamp:1] text-neutral-11 text-center self-center invisible group-hover:visible text-clip"
               title={longTime.format(message.sent)}
             >
               {shortTime.format(message.sent).toLowerCase()}
@@ -225,6 +305,12 @@ function MessageStream({ channelId }: { channelId: string }) {
             prev={messages[i - 1]}
             next={messages[i + 1]}
             key={message.id}
+            onEdit={(content) => {
+              fetch(`/channels/${channelId}`, {
+                method: "PATCH",
+                body: JSON.stringify({ id: message.id, content }),
+              });
+            }}
           />
         ))}
       </ul>
@@ -238,54 +324,87 @@ function MessageBox(
     onSend: (message: string) => void;
   },
 ) {
-  const textarea = useRef<HTMLTextAreaElement>(null);
-  const [focused, setFocused] = useState(false);
-  const [_, forceUpdate] = useState({});
   const send = useCallback(() => {
-    onSend(textarea.current!.value);
-    textarea.current!.value = "";
-    textarea.current!.rows = 1;
-    forceUpdate({});
+    onSend(content);
+    setContent("");
   }, [onSend]);
+  const [content, setContent] = useState("");
 
   return (
     <footer class="flex bg-neutral-3">
-      <div className="flex-1 flex relative">
-        {focused || !textarea.current?.value
-          ? null
-          : (
-            <div class="absolute w-full h-full px-3 py-2 pointer-events-none bg-neutral-3">
-              <Markdown source={textarea.current.value} />{" "}
-              {/* TODO: preprocess emoji/mentions */}
-            </div>
-          )}
-        <textarea
-          class="flex-1 px-3 py-2 bg-transparent resize-none placeholder:text-neutral-11"
-          rows={1}
-          ref={textarea}
-          onFocus={() => setFocused(true)}
-          onBlur={() => setFocused(false)}
-          onKeyPress={(e) => {
-            if (e.key === "Enter" && !e.shiftKey) {
-              e.preventDefault();
-              send();
-            }
-          }}
-          onInput={(e) => {
-            e.currentTarget.rows = Math.max(
-              1,
-              e.currentTarget.value.split("\n").length,
-            );
-          }}
-          placeholder={`message #${channelName}`}
-        />
-      </div>
+      <MessageEntry
+        class="flex-1"
+        placeholder={`message #${channelName}`}
+        onSubmit={send}
+        value={content}
+        onInput={(content) => {
+          // TODO: preprocess emoji/mentions
+          setContent(content);
+        }}
+      />
       <button
-        class="p-2 text-sm font-bold hover:bg-neutral-4 active:bg-neutral-5"
+        class="p-2 text-sm font-bold bg-neutral-3 hover:bg-neutral-4 active:bg-neutral-5"
         onClick={send}
       >
         send
       </button>
     </footer>
+  );
+}
+
+function MessageEntry(
+  {
+    class: className,
+    value,
+    onInput,
+    placeholder,
+    onSubmit,
+    onCancel,
+  }: {
+    class?: string;
+    value: string;
+    onInput(content: string): void;
+    placeholder: string;
+    onSubmit(): void;
+    onCancel?(): void;
+  },
+) {
+  const [focused, setFocused] = useState(false);
+
+  return (
+    <div className={`${className ?? ""} flex relative`}>
+      {focused || value === ""
+        ? null
+        : (
+          <div class="absolute w-full h-full px-3 py-2 pointer-events-none bg-neutral-3">
+            <Markdown source={value} />
+          </div>
+        )}
+      <textarea
+        class="flex-1 px-3 py-2 bg-transparent resize-none placeholder:text-neutral-11"
+        rows={1}
+        onFocus={() => setFocused(true)}
+        onBlur={() => setFocused(false)}
+        onKeyPress={(e) => {
+          if (e.key === "Enter" && !e.shiftKey) {
+            e.preventDefault();
+            onSubmit();
+          }
+        }}
+        onKeyDown={(e) => {
+          if (e.key === "Escape" && onCancel !== undefined) {
+            e.preventDefault();
+            onCancel();
+          }
+        }}
+        onInput={(e) => {
+          const { value } = e.currentTarget;
+          e.currentTarget.rows = Math.max(1, value.split("\n").length);
+          onInput(value);
+        }}
+        value={value}
+        placeholder={placeholder}
+      />
+    </div>
   );
 }

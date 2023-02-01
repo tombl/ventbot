@@ -1,6 +1,6 @@
 import { LOADING, usePromise } from "@/client/utils/promise.ts";
 import { differenceFromNow } from "@/utils/date.ts";
-import { RuleTypesExtended, parse } from "discord-markdown-parser";
+import { parse, RuleTypesExtended } from "discord-markdown-parser";
 import { ComponentChildren } from "preact";
 import { useMemo, useState } from "preact/hooks";
 
