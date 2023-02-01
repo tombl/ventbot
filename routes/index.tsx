@@ -5,6 +5,7 @@ import { channelInfo, verifyUserAgent } from "@/server/internal.ts";
 import * as base64 from "std/encoding/base64url.ts";
 import { CookieMap, cookieMapHeadersInitSymbol } from "std/http/cookie_map.ts";
 import Markdown from "@/islands/Markdown.tsx";
+import { DISCORD_BOT_INVITE } from "@/server/env.ts";
 
 interface Info {
   name: string | undefined;
@@ -63,12 +64,12 @@ export default function ({ data }: PageProps<Data>) {
         <title>ventbot</title>
       </Head>
 
-      <div class="flex flex-col max-w-screen-md min-h-screen p-4 mx-auto text-neutral-12 bg-slate-3">
+      <div class="flex flex-col p-4 mx-auto max-w-screen-md min-h-screen text-neutral-12 bg-slate-3">
         <main class="flex-1">
           <h1 class="mb-4 text-3xl font-bold md:text-4xl">ventbot</h1>
 
           <div class="absolute left-0 w-screen bg-neutral-3 hover:bg-neutral-4">
-            <div class="flex w-full max-w-screen-md px-4 mx-auto">
+            <div class="flex px-4 mx-auto w-full max-w-screen-md">
               <span class="py-2 font-bold">name:</span>
               <NameInput
                 class="flex-1 block p-2 bg-transparent focus:(outline-none ring ring-brand-7)"
@@ -84,10 +85,10 @@ export default function ({ data }: PageProps<Data>) {
               <section>
                 <h2 class="mb-2 text-xl font-bold truncate">{guild}</h2>
                 {channels.map(({ channel, name, topic }) => (
-                    <a href={`/channels/${channel}`} class="block">
-                      <h3 class="text-xl font-bold underline truncate">
-                        #{name ?? "unknown-channel"}
-                      </h3>
+                  <a href={`/channels/${channel}`} class="block">
+                    <h3 class="text-xl font-bold underline truncate">
+                      #{name ?? "unknown-channel"}
+                    </h3>
                     {topic
                       ? (
                         <p class="truncate text-neutral-11">
@@ -95,7 +96,7 @@ export default function ({ data }: PageProps<Data>) {
                         </p>
                       )
                       : null}
-                    </a>
+                  </a>
                 ))}
               </section>
             ))}
@@ -107,7 +108,7 @@ export default function ({ data }: PageProps<Data>) {
             help
           </a>
           <span>|</span>
-          <a href={Deno.env.get("DISCORD_BOT_INVITE")} class="underline">
+          <a href={DISCORD_BOT_INVITE.href} class="underline">
             invite bot
           </a>
         </footer>

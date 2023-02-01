@@ -1,4 +1,4 @@
-import Markdown from "@/client/components/Markdown.tsx";
+import Markdown, { Emoji } from "@/client/components/Markdown.tsx";
 import { LOADING, usePromise } from "@/client/utils/promise.ts";
 import { useWebsocket } from "@/client/utils/websocket.ts";
 import type { Message, Packet } from "@/routes/channels/[channel].tsx";
@@ -56,7 +56,7 @@ function Avatar({ user }: { user: string }) {
   const avatar = usePromise(getAvatar(user));
   return (
     <img
-      class={`rounded-full self-center w-[40px] h-[40px] ${
+      class={`rounded-full my-[4px] w-[40px] h-[40px] ${
         avatar === LOADING ? "invisible" : ""
       }`}
       src={avatar === LOADING
@@ -76,20 +76,41 @@ const longTime = new Intl.DateTimeFormat(undefined, {
   timeStyle: "short",
 });
 function Message(
-  { message, prev }: { message: Message; prev: Message | undefined },
+  { message, prev, next }: {
+    message: Message;
+    prev: Message | undefined;
+    next: Message | undefined;
+  },
 ) {
-  const hasHeading = prev === undefined ||
+  const isFirst = prev === undefined ||
     prev.author !== message.author ||
     new Date(message.sent).getTime() - new Date(prev.sent).getTime() >
-      1000 * 60 * 20;
+      1000 * 60 * 10;
+  const isLast = next === undefined ||
+    next.author !== message.author ||
+    new Date(next.sent).getTime() - new Date(message.sent).getTime() >
+      1000 * 60 * 10;
 
   const content = (
-    <div class="[overflow-wrap:anywhere]">
-      <Markdown source={message.content} />
-      {message.isEdited
-        ? <span class="ml-1 text-sm text-neutral-11">(edited)</span>
-        : null}
-    </div>
+    <>
+      <div class="[overflow-wrap:anywhere]">
+        <Markdown source={message.content} />
+        {message.isEdited
+          ? <span class="ml-1 text-sm text-neutral-11">(edited)</span>
+          : null}
+      </div>
+      {message.reactions.length === 0 ? null : (
+        <div class="my-2 space-x-1">
+          {message.reactions.map(({ name, id, count }) => (
+            <span class="p-2 text-sm bg-neutral-2 border-1 border-neutral-6">
+              {id === undefined
+                ? name
+                : <Emoji name={name ?? "unknown-emoji"} id={id} />} {count}
+            </span>
+          ))}
+        </div>
+      )}
+    </>
   );
 
   const sent = new Date(message.sent);
@@ -103,14 +124,18 @@ function Message(
     sent.getFullYear() === yesterday.getFullYear();
 
   return (
-    <li class={`flex flex-row space-x-4 ${hasHeading ? "mt-4" : ""}`}>
-      {hasHeading
+    <li
+      class={`group px-4 flex flex-row space-x-4 hover:bg-neutral-2 ${
+        isFirst ? "mt-4" : ""
+      } ${isLast ? "mb-4" : ""}`}
+    >
+      {isFirst
         ? (
           <>
             <Avatar user={message.author} />
             <div class="flex-auto">
               <div class="space-x-1">
-                <span class="font-bold">{message.tag}</span>
+                <span class="font-bold" title={message.tag}>{message.tag.split("#")[0]}</span>
                 <span class="space-x-1 text-sm text-neutral-11">
                   {message.isBot
                     ? <span class="font-bold text-brand-11">bot</span>
@@ -133,7 +158,12 @@ function Message(
         )
         : (
           <>
-            <span class="w-[40px]"></span>
+            <span
+              class="w-[40px] text-[0.7rem] text-neutral-11 text-center self-center invisible group-hover:visible"
+              title={longTime.format(message.sent)}
+            >
+              {shortTime.format(message.sent).toLowerCase()}
+            </span>
             <div class="flex-auto">{content}</div>
           </>
         )}
@@ -154,6 +184,7 @@ export default function Messages(props: { channel: string; name: string }) {
       <MessageBox
         channelName={props.name}
         onSend={async (msg) => {
+          if (msg === "") return;
           const res = await fetch(`/channels/${props.channel}`, {
             method: "POST",
             body: JSON.stringify({ name: botName, content: msg }),
@@ -180,18 +211,19 @@ function MessageStream({ channelId }: { channelId: string }) {
 
   return (
     <div
-      class="flex-1 max-w-full p-4 overflow-auto"
+      class="flex-1 max-w-full overflow-auto"
       ref={container}
       onScroll={(e) => {
         const { scrollTop, scrollHeight, clientHeight } = e.currentTarget;
         isAtBottom.current = scrollTop + clientHeight >= scrollHeight;
       }}
     >
-      <ul class="-mt-4">
+      <ul>
         {messages.map((message, i) => (
           <Message
             message={message}
             prev={messages[i - 1]}
+            next={messages[i + 1]}
             key={message.id}
           />
         ))}
@@ -207,34 +239,53 @@ function MessageBox(
   },
 ) {
   const textarea = useRef<HTMLTextAreaElement>(null);
+  const [focused, setFocused] = useState(false);
+  const [_, forceUpdate] = useState({});
   const send = useCallback(() => {
     onSend(textarea.current!.value);
     textarea.current!.value = "";
     textarea.current!.rows = 1;
+    forceUpdate({});
   }, [onSend]);
 
   return (
     <footer class="flex bg-neutral-3">
-      {/* TODO: swap to preview on blur */}
-      <textarea 
-        class="flex-1 px-3 py-2 bg-transparent resize-none"
-        rows={1}
-        ref={textarea}
-        onKeyPress={(e) => {
-          if (e.key === "Enter" && !e.shiftKey) {
-            e.preventDefault();
-            send();
-          }
-        }}
-        onInput={(e) => {
-          e.currentTarget.rows = Math.max(
-            1,
-            e.currentTarget.value.split("\n").length,
-          );
-        }}
-        placeholder={`message #${channelName}`}
-      />
-      <button class="p-2 text-sm font-bold" onClick={send}>send</button>
+      <div className="flex-1 flex relative">
+        {focused || !textarea.current?.value
+          ? null
+          : (
+            <div class="absolute w-full h-full px-3 py-2 pointer-events-none bg-neutral-3">
+              <Markdown source={textarea.current.value} />{" "}
+              {/* TODO: preprocess emoji/mentions */}
+            </div>
+          )}
+        <textarea
+          class="flex-1 px-3 py-2 bg-transparent resize-none placeholder:text-neutral-11"
+          rows={1}
+          ref={textarea}
+          onFocus={() => setFocused(true)}
+          onBlur={() => setFocused(false)}
+          onKeyPress={(e) => {
+            if (e.key === "Enter" && !e.shiftKey) {
+              e.preventDefault();
+              send();
+            }
+          }}
+          onInput={(e) => {
+            e.currentTarget.rows = Math.max(
+              1,
+              e.currentTarget.value.split("\n").length,
+            );
+          }}
+          placeholder={`message #${channelName}`}
+        />
+      </div>
+      <button
+        class="p-2 text-sm font-bold hover:bg-neutral-4 active:bg-neutral-5"
+        onClick={send}
+      >
+        send
+      </button>
     </footer>
   );
 }

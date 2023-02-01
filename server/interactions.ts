@@ -1,16 +1,10 @@
 import * as discord from "discordeno";
-import { assert } from "@/utils/assert.ts";
-import * as bot from "./bot.ts";
-import { createAuthorisation, getHash } from "./internal.ts";
 import * as base64 from "std/encoding/base64url.ts";
+import * as bot from "./bot.ts";
+import { DEV_GUILD, HOST } from "./env.ts";
+import { createAuthorisation, getHash } from "./internal.ts";
 
-const DEV_GUILD = Deno.env.get("DEV_GUILD");
-assert(DEV_GUILD !== undefined, "$DEV_GUILD is not set");
-
-const HOST = Deno.env.get("HOST");
-assert(HOST !== undefined, "$HOST is not set");
-
-const commands: discord.UpsertApplicationCommands[] = [{
+const commands: discord.CreateApplicationCommand[] = [{
   type: discord.ApplicationCommandTypes.ChatInput,
   name: "ventbot",
   description: "create a ventbot in this channel",
@@ -52,9 +46,6 @@ const commandHandlers: Record<
     const message = interaction.data!.resolved!.messages!.first()!;
 
     const hash = getHash(message.id);
-    const content = hash === null // TODO: swap for embed, link help page
-      ? `this message was not sent via ventbot`
-      : `hash: ${base64.encode(hash)}`;
     await discord.sendInteractionResponse(
       bot.bot,
       interaction.id,
@@ -62,7 +53,18 @@ const commandHandlers: Record<
       {
         type: discord.InteractionResponseTypes.ChannelMessageWithSource,
         data: {
-          content,
+          embeds: [{
+            title: "message verification",
+            url: `${HOST}/help#verification`,
+            description: hash === null
+              ? "this message was not sent via ventbot"
+              : undefined,
+            fields: hash === null ? undefined : [{
+              name: "hash",
+              value: base64.encode(hash),
+              inline: true,
+            }],
+          }],
           flags: discord.ApplicationCommandFlags.Ephemeral,
         },
       },
@@ -106,11 +108,11 @@ const actionHandlers: Record<
 };
 
 export async function updateCommands(global: boolean) {
-  await discord.upsertApplicationCommands(
-    bot.bot,
-    commands,
-    global ? undefined : BigInt(DEV_GUILD!),
-  );
+  if (global) {
+    await discord.upsertGlobalApplicationCommands(bot.bot, commands);
+  } else {
+    await discord.upsertGuildApplicationCommands(bot.bot, DEV_GUILD, commands);
+  }
 }
 
 export function handleInteraction(interaction: discord.Interaction) {

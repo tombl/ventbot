@@ -1,11 +1,14 @@
 import { LOADING, usePromise } from "@/client/utils/promise.ts";
 import { differenceFromNow } from "@/utils/date.ts";
-import { parse, RuleTypesExtended } from "discord-markdown-parser";
+import { RuleTypesExtended, parse } from "discord-markdown-parser";
 import { ComponentChildren } from "preact";
 import { useMemo, useState } from "preact/hooks";
 
-function Mention({ type, id }: { type: "user" | "channel"; id: string }) {
+function Mention(
+  { type, id }: { type: "user" | "channel" | "plain"; id: string },
+) {
   const name = usePromise(useMemo(async () => {
+    if (type === "plain") return id;
     const res = await fetch(`/api/${type}?id=${id}`);
     if (res.status !== 200) {
       throw new Error(`Failed to fetch ${type} name: ${await res.text()}`);
@@ -20,7 +23,7 @@ function Mention({ type, id }: { type: "user" | "channel"; id: string }) {
     </span>
   );
 }
-function Emoji({ name, id }: { name: string; id: string }) {
+export function Emoji({ name, id }: { name: string; id: string }) {
   return (
     <img
       src={`https://cdn.discordapp.com/emojis/${id}.webp?size=44&quality=lossless`}
@@ -112,6 +115,9 @@ function Node({ content }: { content: Content }) {
       return <Mention type="user" id={content.id!} />;
     case "channel":
       return <Mention type="channel" id={content.id!} />;
+    case "everyone":
+    case "here":
+      return <Mention type="plain" id={content.type} />;
     case "emoji":
       return <Emoji name={content.name!} id={content.id!} />;
     case "url":
@@ -169,7 +175,7 @@ function Node({ content }: { content: Content }) {
     default:
       console.warn("Unhandled markdown node", content);
       return (
-        <span class="text-error-0">
+        <span class="text-error-11">
           {"content" in content ? <Node content={content.content!} /> : (
             content.type
           )}

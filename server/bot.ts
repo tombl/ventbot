@@ -5,11 +5,13 @@ import {
 } from "@/routes/channels/[channel].tsx";
 import { memo } from "@/utils/memo.ts";
 import * as discord from "discordeno";
+import { DISCORD_TOKEN } from "./env.ts";
 import { handleInteraction } from "./interactions.ts";
 
 export const bot = discord.createBot({
-  token: Deno.env.get("DISCORD_TOKEN")!,
-  intents: discord.Intents.GuildMessages | discord.Intents.MessageContent,
+  token: DISCORD_TOKEN,
+  intents: discord.Intents.GuildMessages | discord.Intents.MessageContent |
+    discord.Intents.GuildMessageReactions,
   events: {
     // debug(...args) {
     //   console.info(args.join(" "));
@@ -31,19 +33,19 @@ export const bot = discord.createBot({
           Promise.resolve(message),
         );
         (await getLastMessages.read(message.channelId))?.push(message.id);
-        await notifySubscribers({
+        notifySubscribers({
           type: "create",
           message: convertMessage(message),
         }, message.channelId);
       }
     },
-    async messageUpdate(_bot, message) {
+    messageUpdate(_bot, message) {
       if (hasListeners(message.channelId)) {
         getMessage.insert(
           [message.id, message.channelId],
           Promise.resolve(message),
         );
-        await notifySubscribers({
+        notifySubscribers({
           type: "update",
           message: convertMessage(message),
         }, message.channelId);
@@ -58,42 +60,53 @@ export const bot = discord.createBot({
           messages.splice(index, 1);
         }
       }
-      await notifySubscribers({
+      notifySubscribers({
         type: "delete",
         id: message.id.toString(),
       }, message.channelId);
     },
-    async messageDeleteBulk(_bot, { channelId, ids }) {
+    messageDeleteBulk(_bot, { channelId, ids }) {
       for (const id of ids) {
         getMessage.invalidate(id, channelId);
       }
-      await notifySubscribers({ type: "bulkDelete", ids:ids.map(String) }, channelId);
       getLastMessages.invalidate(channelId);
+      notifySubscribers(
+        { type: "bulkDelete", ids: ids.map(String) },
+        channelId,
+      );
     },
     async reactionAdd(_bot, { messageId, channelId }) {
+      console.log("reaction", messageId, channelId);
       getMessage.invalidate(messageId, channelId);
-      await notifySubscribers({
+      if (!hasListeners(channelId)) return;
+      notifySubscribers({
         type: "update",
         message: convertMessage(await getMessage(messageId, channelId)),
       }, channelId);
     },
     async reactionRemove(_bot, { messageId, channelId }) {
+      console.log("reaction", messageId, channelId);
       getMessage.invalidate(messageId, channelId);
-      await notifySubscribers({
+      if (!hasListeners(channelId)) return;
+      notifySubscribers({
         type: "update",
         message: convertMessage(await getMessage(messageId, channelId)),
       }, channelId);
     },
     async reactionRemoveAll(_bot, { messageId, channelId }) {
+      console.log("reaction", messageId, channelId);
       getMessage.invalidate(messageId, channelId);
-      await notifySubscribers({
+      if (!hasListeners(channelId)) return;
+      notifySubscribers({
         type: "update",
         message: convertMessage(await getMessage(messageId, channelId)),
       }, channelId);
     },
     async reactionRemoveEmoji(_bot, { messageId, channelId }) {
+      console.log("reaction", messageId, channelId);
       getMessage.invalidate(messageId, channelId);
-      await notifySubscribers({
+      if (!hasListeners(channelId)) return;
+      notifySubscribers({
         type: "update",
         message: convertMessage(await getMessage(messageId, channelId)),
       }, channelId);
@@ -102,8 +115,8 @@ export const bot = discord.createBot({
 });
 
 export const getMessage = memo((id: bigint, channelId: bigint) => {
-  console.log("fetching message", id);
-  return discord.getMessage(bot, id, channelId);
+  console.log("fetching message", id, "in", channelId);
+  return discord.getMessage(bot, channelId, id);
 });
 export const getLastMessages = memo(async (channelId: bigint) => {
   console.log("fetching last messages");
