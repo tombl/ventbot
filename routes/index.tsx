@@ -63,12 +63,12 @@ export default function ({ data }: PageProps<Data>) {
         <title>ventbot</title>
       </Head>
 
-      <div class="flex flex-col max-w-screen-md min-h-screen p-4 mx-auto text-neutral-12 bg-slate-3">
+      <div class="flex flex-col p-4 mx-auto max-w-screen-md min-h-screen text-neutral-12 bg-slate-3">
         <main class="flex-1">
           <h1 class="mb-4 text-3xl font-bold md:text-4xl">ventbot</h1>
 
           <div class="absolute left-0 w-screen bg-neutral-3 hover:bg-neutral-4">
-            <div class="flex w-full max-w-screen-md px-4 mx-auto">
+            <div class="flex px-4 mx-auto w-full max-w-screen-md">
               <span class="py-2 font-bold">name:</span>
               <NameInput
                 class="flex-1 block p-2 bg-transparent focus:(outline-none ring ring-brand-7)"

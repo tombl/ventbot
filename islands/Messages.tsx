@@ -165,7 +165,7 @@ function Message(
               <span>
                 escape to{" "}
                 <button
-                  class="text-brand-11 hover:underline"
+                  class="hover:underline text-brand-11"
                   onClick={() => setEditContent(null)}
                 >
                   cancel
@@ -175,7 +175,7 @@ function Message(
               <span>
                 enter to{" "}
                 <button
-                  class="text-brand-11 hover:underline"
+                  class="hover:underline text-brand-11"
                   onClick={() => {
                     onEdit(editContent);
                     setEditContent(null);
@@ -238,7 +238,7 @@ function Message(
         : (
           <>
             <span
-              class="w-[40px] text-[0.6rem] [-webkit-line-clamp:1] text-neutral-11 text-center self-center invisible group-hover:visible text-clip"
+              class="invisible self-center text-center group-hover:visible w-[40px] text-[0.6rem] [-webkit-line-clamp:1] text-neutral-11 text-clip"
               title={longTime.format(message.sent)}
             >
               {shortTime.format(message.sent).toLowerCase()}
@@ -290,7 +290,7 @@ function MessageStream({ channelId }: { channelId: string }) {
 
   return (
     <div
-      class="flex-1 max-w-full overflow-auto"
+      class="overflow-auto flex-1 max-w-full"
       ref={container}
       onScroll={(e) => {
         const { scrollTop, scrollHeight, clientHeight } = e.currentTarget;
@@ -381,12 +381,12 @@ function MessageEntry(
       {focused || value === ""
         ? null
         : (
-          <div class="absolute w-full h-full px-3 py-2 pointer-events-none bg-neutral-3">
+          <div class="absolute py-2 px-3 w-full h-full pointer-events-none bg-neutral-3">
             <Markdown source={value} />
           </div>
         )}
       <textarea
-        class="flex-1 px-3 py-2 bg-transparent resize-none placeholder:text-neutral-11"
+        class="flex-1 py-2 px-3 bg-transparent resize-none placeholder:text-neutral-11"
         rows={rows}
         onFocus={() => setFocused(true)}
         onBlur={() => setFocused(false)}
