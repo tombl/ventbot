@@ -81,6 +81,15 @@ const longTime = new Intl.DateTimeFormat(undefined, {
   dateStyle: "short",
   timeStyle: "short",
 });
+
+function messageIsContiguous(a: Message, b: Message | undefined) {
+  return b !== undefined &&
+    a.author === b.author &&
+    a.tag === b.tag &&
+    Math.abs(new Date(a.sent).getTime() - new Date(b.sent).getTime()) <
+      1000 * 60 * 10;
+}
+
 function Message(
   { message, prev, next, onEdit }: {
     message: Message;
@@ -89,14 +98,8 @@ function Message(
     onEdit(content: string): void;
   },
 ) {
-  const isFirst = prev === undefined ||
-    prev.author !== message.author ||
-    new Date(message.sent).getTime() - new Date(prev.sent).getTime() >
-      1000 * 60 * 10;
-  const isLast = next === undefined ||
-    next.author !== message.author ||
-    new Date(next.sent).getTime() - new Date(message.sent).getTime() >
-      1000 * 60 * 10;
+  const isFirst = messageIsContiguous(message, prev);
+  const isLast = messageIsContiguous(message, next);
 
   const sent = new Date(message.sent);
   const now = new Date();
@@ -110,9 +113,6 @@ function Message(
 
   const [editContent, setEditContent] = useState<string | null>(null);
   const shouldFocusEdit = useRef(false);
-
-  useEffect(() => {
-  }, []);
 
   const content = (
     <>
