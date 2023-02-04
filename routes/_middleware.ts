@@ -1,4 +1,6 @@
 import { MiddlewareHandlerContext } from "$fresh/server.ts";
+import { IP_HEADER } from "@/server/env.ts";
+import { fail } from "@/utils/assert.ts";
 import {
   BurstyRateLimiter,
   RateLimiterMemory,
@@ -23,9 +25,10 @@ export interface MethodContext {
   cookies: CookieMap;
 }
 
-export async function handler(_req: Request, ctx: MiddlewareHandlerContext) {
-  // TODO: X-Forwarded-For
-  const ip = (ctx.remoteAddr as Deno.NetAddr).hostname;
+export async function handler(req: Request, ctx: MiddlewareHandlerContext) {
+  const ip = IP_HEADER === null
+    ? (ctx.remoteAddr as Deno.NetAddr).hostname
+    : (req.headers.get(IP_HEADER) ?? fail(`${IP_HEADER} is not set`));
   try {
     await limiter.consume(ip);
   } catch (error) {

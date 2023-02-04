@@ -10,9 +10,11 @@ import { start } from "$fresh/server.ts";
 import manifest from "./fresh.gen.ts";
 
 import freshwind from "freshwind/plugin.ts";
+import { PORT } from "./server/env.ts";
 import * as twind from "./twind.config.ts";
 
 await start(manifest, {
+  port: PORT,
   plugins: [
     freshwind(twind.default, twind.configURL),
   ],
