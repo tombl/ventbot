@@ -7,7 +7,6 @@ import {
   RateLimiterRes,
 } from "rate-limiter-flexible";
 import { CookieMap } from "std/http/cookie_map.ts";
-import * as log from "std/log/mod.ts";
 import { HttpSource, Registry } from "@/server/metrics.ts";
 
 const limiter = new BurstyRateLimiter(
@@ -39,7 +38,6 @@ export const handler: MiddlewareHandler[] = [
       await limiter.consume(ip);
     } catch (error) {
       if (error instanceof RateLimiterRes) {
-        log.info("rate limited", ip);
         return new Response("rate limited", {
           status: 429,
           headers: { "Retry-After": (error.msBeforeNext / 1000).toString() },
