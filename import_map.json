@@ -3,7 +3,6 @@
     "@/": "./",
     "sqlite3": "https://deno.land/x/sqlite3@0.7.3/mod.ts",
     "discordeno": "https://deno.land/x/discordeno@18.0.1/mod.ts",
-    "~icon/": "https://deno.land/x/tabler_icons_tsx@0.0.2/tsx/",
     "discord-markdown-parser": "https://esm.sh/discord-markdown-parser@1.1.0",
     "rate-limiter-flexible": "https://esm.sh/rate-limiter-flexible@2.4.1",
     "std/": "https://deno.land/std@0.175.0/",
