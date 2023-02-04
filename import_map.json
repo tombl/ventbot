@@ -6,6 +6,7 @@
     "discord-markdown-parser": "https://esm.sh/discord-markdown-parser@1.1.0",
     "rate-limiter-flexible": "https://esm.sh/rate-limiter-flexible@2.4.1",
     "std/": "https://deno.land/std@0.175.0/",
+    "observability/": "https://deno.land/x/observability@v0.1.2/",
 
     "$fresh/": "https://deno.land/x/fresh@1.1.2/",
     "preact": "https://esm.sh/preact@10.11.0",

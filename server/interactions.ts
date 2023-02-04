@@ -17,7 +17,7 @@ const commands: discord.CreateApplicationCommand[] = [{
 
 const commandHandlers: Record<
   string,
-  (interaction: discord.Interaction) => void
+  (interaction: discord.Interaction) => Promise<void>
 > = {
   async ventbot(interaction) {
     await discord.sendInteractionResponse(
@@ -77,7 +77,7 @@ const commandHandlers: Record<
 const actionHandlers: Record<
   string,
   // deno-lint-ignore no-explicit-any
-  (interaction: discord.Interaction, ...args: any[]) => void
+  (interaction: discord.Interaction, ...args: any[]) => Promise<void>
 > = {
   async sendlink(interaction, channelId: string) {
     const token = createAuthorisation(interaction.user.id, BigInt(channelId));
@@ -119,7 +119,7 @@ export async function updateCommands(global: boolean) {
   }
 }
 
-export function handleInteraction(interaction: discord.Interaction) {
+export async function handleInteraction(interaction: discord.Interaction) {
   switch (interaction.type) {
     case discord.InteractionTypes.Ping: {
       discord.sendInteractionResponse(
@@ -134,7 +134,7 @@ export function handleInteraction(interaction: discord.Interaction) {
       const { name } = interaction.data!;
       const handler = commandHandlers[name];
       if (handler) {
-        handler(interaction);
+        await handler(interaction);
       } else {
         log.warning(`No handler for command ${JSON.stringify(name)}`);
       }
@@ -152,7 +152,7 @@ export function handleInteraction(interaction: discord.Interaction) {
       const handlerArgs = JSON.parse(customId.slice(colon + 1));
       const handler = actionHandlers[handlerName];
       if (handler) {
-        handler(interaction, ...handlerArgs);
+        await handler(interaction, ...handlerArgs);
       } else {
         log.warning(`No handler for action ${JSON.stringify(customId)}`);
       }

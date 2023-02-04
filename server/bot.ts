@@ -7,6 +7,7 @@ import * as discord from "discordeno";
 import * as log from "std/log/mod.ts";
 import { DISCORD_TOKEN } from "./env.ts";
 import { handleInteraction } from "./interactions.ts";
+import { DiscordMetrics, Registry } from "./metrics.ts";
 
 export const bot = discord.createBot({
   token: DISCORD_TOKEN,
@@ -21,9 +22,15 @@ export const bot = discord.createBot({
         `attached to discord gateway as ${user.username}#${user.discriminator}`,
       );
     },
-    interactionCreate(_bot, interaction) {
+    async interactionCreate(_bot, interaction) {
       log.debug("interaction", interaction.user.username);
-      handleInteraction(interaction);
+      metrics.inflightInteractions++;
+      try {
+        await handleInteraction(interaction);
+      } finally {
+        metrics.inflightInteractions--;
+        metrics.handledInteractions++;
+      }
     },
     async messageCreate(_bot, message) {
       if (hasListeners(message.channelId)) {
@@ -108,10 +115,15 @@ export const bot = discord.createBot({
   },
 });
 
+const metrics = new DiscordMetrics();
+Registry.sources.push(metrics);
+
 export const getMessage = memo((id: bigint, channelId: bigint) => {
   log.debug("fetching message", id, "in", channelId);
   return discord.getMessage(bot, channelId, id);
 });
+metrics.caches.set("messages", getMessage.metrics);
+
 export const getLastMessages = memo(async (channelId: bigint) => {
   log.debug("fetching last messages");
   const messages = await discord.getMessages(bot, channelId, { limit: 10 });
@@ -120,10 +132,14 @@ export const getLastMessages = memo(async (channelId: bigint) => {
     return msg.id;
   }).reverse();
 });
+metrics.caches.set("lastMessages", getLastMessages.metrics);
+
 export const getChannel = memo((id: bigint) => {
   log.debug("fetching channel", id);
   return discord.getChannel(bot, id);
 });
+metrics.caches.set("channels", getChannel.metrics);
+
 export const getUser = memo((id: bigint) => {
   log.debug("fetching user", id);
   return discord.getUser(bot, id);
