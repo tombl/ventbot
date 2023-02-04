@@ -98,8 +98,8 @@ function Message(
     onEdit(content: string): void;
   },
 ) {
-  const isFirst = messageIsContiguous(message, prev);
-  const isLast = messageIsContiguous(message, next);
+  const isFirst = !messageIsContiguous(message, prev);
+  const isLast = !messageIsContiguous(message, next);
 
   const sent = new Date(message.sent);
   const now = new Date();
