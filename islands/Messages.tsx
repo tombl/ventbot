@@ -238,7 +238,7 @@ function Message(
         : (
           <>
             <span
-              class="invisible self-center text-center group-hover:visible w-[40px] text-[0.6rem] [-webkit-line-clamp:1] text-neutral-11 text-clip"
+              class="invisible self-center text-center group-hover:visible shrink-0 w-[40px] text-[0.6rem] [-webkit-line-clamp:1] text-neutral-11 text-clip"
               title={longTime.format(message.sent)}
             >
               {shortTime.format(message.sent).toLowerCase()}
