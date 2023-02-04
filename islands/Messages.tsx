@@ -324,11 +324,12 @@ function MessageBox(
     onSend: (message: string) => void;
   },
 ) {
-  const send = useCallback(() => {
+  const [content, setContent] = useState("");
+  const send = () => {
+    // TODO: speculative/dimmed message
     onSend(content);
     setContent("");
-  }, [onSend]);
-  const [content, setContent] = useState("");
+  };
 
   return (
     <footer class="flex bg-neutral-3">
@@ -370,6 +371,11 @@ function MessageEntry(
   },
 ) {
   const [focused, setFocused] = useState(false);
+  const [rows, setRows] = useState(1);
+
+  useEffect(() => {
+    setRows(Math.max(1, value.split("\n").length));
+  }, [value]);
 
   return (
     <div className={`${className ?? ""} flex relative`}>
@@ -382,7 +388,7 @@ function MessageEntry(
         )}
       <textarea
         class="flex-1 px-3 py-2 bg-transparent resize-none placeholder:text-neutral-11"
-        rows={1}
+        rows={rows}
         onFocus={() => setFocused(true)}
         onBlur={() => setFocused(false)}
         onKeyPress={(e) => {
