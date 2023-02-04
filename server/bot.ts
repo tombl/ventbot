@@ -151,9 +151,5 @@ export const getGuild = memo((id: bigint) => {
   log.debug("fetching guild", id);
   return discord.getGuild(bot, id);
 });
-export const getWebhook = memo((id: bigint) => {
-  log.debug("fetching webhook", id);
-  return discord.getWebhook(bot, id);
-});
 
 await discord.startBot(bot);

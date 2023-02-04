@@ -82,9 +82,8 @@ const longTime = new Intl.DateTimeFormat(undefined, {
   timeStyle: "short",
 });
 
-function messageIsContiguous(a: Message, b: Message | undefined) {
-  return b !== undefined &&
-    a.author === b.author &&
+function messageIsContiguous(a: Message, b: Message) {
+  return a.author === b.author &&
     a.tag === b.tag &&
     Math.abs(new Date(a.sent).getTime() - new Date(b.sent).getTime()) <
       1000 * 60 * 10;
@@ -98,8 +97,8 @@ function Message(
     onEdit(content: string): void;
   },
 ) {
-  const isFirst = !messageIsContiguous(message, prev);
-  const isLast = !messageIsContiguous(message, next);
+  const isFirst = prev === undefined || !messageIsContiguous(message, prev);
+  const isLast = next === undefined || !messageIsContiguous(message, next);
 
   const sent = new Date(message.sent);
   const now = new Date();
