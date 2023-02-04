@@ -40,6 +40,9 @@ export const bot = discord.createBot({
           Promise.resolve(message),
         );
         (await getLastMessages.read(message.channelId))?.push(message.id);
+        if (message.isFromBot) {
+          await new Promise((resolve) => setTimeout(resolve, 250));
+        }
         notifySubscribers({ type: "create", message }, message.channelId);
       }
     },
@@ -126,7 +129,7 @@ metrics.caches.set("messages", getMessage.metrics);
 
 export const getLastMessages = memo(async (channelId: bigint) => {
   log.debug("fetching last messages");
-  const messages = await discord.getMessages(bot, channelId, { limit: 10 });
+  const messages = await discord.getMessages(bot, channelId, { limit: 20 });
   return messages.map((msg) => {
     getMessage.insert([msg.id, channelId], Promise.resolve(msg));
     return msg.id;

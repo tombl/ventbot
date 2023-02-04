@@ -125,4 +125,21 @@ export class DiscordMetrics implements MetricsSource {
   }
 }
 
+export class DatabaseMetrics implements MetricsSource {
+  tables = new Map<string, () => number>();
+
+  *scrapeMetrics(): Generator<OpenMetric, void, unknown> {
+    yield {
+      prefix: "database_table_size",
+      type: "gauge",
+      help: `Database table sizes`,
+      values: new Map(
+        [...this.tables.entries()].flatMap(([name, table]) => {
+          return [[name, table()]];
+        }),
+      ),
+    };
+  }
+}
+
 runMetricsServer({ port: 9090 });

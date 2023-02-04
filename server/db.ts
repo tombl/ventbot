@@ -1,4 +1,5 @@
 import { BindValue, Database, Statement } from "sqlite3";
+import { DatabaseMetrics, Registry } from "./metrics.ts";
 
 export function trustedQuery(query: string) {
   const arr: string[] & { raw?: string[] } = [query];
@@ -54,7 +55,9 @@ class WrappedDatabase {
 }
 
 const db = new WrappedDatabase(
-  new Database(new URL("../storage/db.sqlite", import.meta.url), { int64: true }),
+  new Database(new URL("../storage/db.sqlite", import.meta.url), {
+    int64: true,
+  }),
 );
 
 db.run`
@@ -111,3 +114,19 @@ export interface SentMessage {
 }
 
 export default db;
+
+const metrics = new DatabaseMetrics();
+metrics.tables.set(
+  "authorisations",
+  () => db.value<[number]>`select count(*) from authorisations`![0],
+);
+metrics.tables.set(
+  "webhooks",
+  () => db.value<[number]>`select count(*) from webhooks`![0],
+);
+metrics.tables.set(
+  "sent_messages",
+  () => db.value<[number]>`select count(*) from sent_messages`![0],
+);
+
+Registry.sources.push(metrics);
