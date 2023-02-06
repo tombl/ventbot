@@ -2,10 +2,14 @@
 title: message verification
 ---
 
-Every message sent through ventbot has a verification hash.
-This hash is derived from a unique token stored on the venters device, as well as the name they're using.
+Every message sent through ventbot has a verification hash which ties it back to its author.
+The hash accessible in Discord via right click/long press on the message > Apps > verify.
 
-This mechanism is designed for the sake of eliminating ventbot impersonation, because the hash of a message sent by an impersonator will be different to that of a message by the original venter.
+This hash is a value non-reversibly derived from:
+• a unique token stored on the venters device.
+• the name they're using.
+
+This mechanism is designed for the sake of eliminating ventbot impersonation, because **the hash of a message sent by an impersonator will be different to that of a message by the original venter**.
 
 For example, these factors will change the message's hash:
 • Which device the message is sent from.
@@ -18,3 +22,4 @@ These will keep the hash constant:
 • Sending messages on different days.
 
 Therefore, if you don't want your venting today to link back to your previous venting, choose a different name, use a different device, or clear your cookies.
+Additionally, if you suspect a vented message of being an impersonation, click verify to see its hash, and compare it with the hash of a known real message. If they differ, they were sent on different devices.
