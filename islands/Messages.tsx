@@ -251,7 +251,7 @@ function Message(
 }
 
 export default function Messages(props: { channel: string; name: string }) {
-  const botName = JSON.parse(sessionStorage.getItem("name") ?? `"vent"`);
+  const botName = JSON.parse(localStorage.getItem("name") ?? `"vent"`);
 
   return (
     <main class="flex flex-col h-screen text-neutral-12">

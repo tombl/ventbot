@@ -1,8 +1,8 @@
 import { JSX } from "preact";
-import { useSessionStorage } from "@/client/utils/storage.ts";
+import { useLocalStorage } from "@/client/utils/storage.ts";
 
 export default function NameInput(props: JSX.IntrinsicElements["input"]) {
-  const [name, setName] = useSessionStorage("name", props.defaultValue ?? "");
+  const [name, setName] = useLocalStorage("name", props.defaultValue ?? "");
 
   return (
     <input
