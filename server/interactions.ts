@@ -27,15 +27,29 @@ const commandHandlers: Record<
       {
         type: discord.InteractionResponseTypes.ChannelMessageWithSource,
         data: {
+          flags: discord.ApplicationCommandFlags.Ephemeral,
+          embeds: [{
+            title: "create a new ventbot?",
+            fields: [
+              {
+                name: "trying to create a new ventbot?",
+                value:
+                  "you're in the right place. click confirm to create a vent button in this channel. you should probably pin the created button.",
+              },
+              {
+                name: "trying to anonymously vent?",
+                value:
+                  "ignore this message. instead, find the vent button in this channel and click it. it's probably pinned.",
+              },
+            ],
+          }],
           components: [{
             type: discord.MessageComponentTypes.ActionRow,
             components: [{
               type: discord.MessageComponentTypes.Button,
               style: discord.ButtonStyles.Primary,
-              label: "vent",
-              customId: `sendlink:${
-                JSON.stringify([interaction.channelId!.toString()])
-              }`,
+              label: "confirm",
+              customId: "confirmCreate:[]",
             }],
           }],
         },
@@ -102,6 +116,30 @@ then, whenever you want to vent, just go to ${host("/").href})`,
               style: discord.ButtonStyles.Link,
               label: "add to vent",
               url: host(`/add/${base64.encode(token)}`).href,
+            }],
+          }],
+        },
+      },
+    );
+  },
+
+  async confirmCreate(interaction) {
+    await discord.sendInteractionResponse(
+      bot.bot,
+      interaction.id,
+      interaction.token,
+      {
+        type: discord.InteractionResponseTypes.ChannelMessageWithSource,
+        data: {
+          components: [{
+            type: discord.MessageComponentTypes.ActionRow,
+            components: [{
+              type: discord.MessageComponentTypes.Button,
+              style: discord.ButtonStyles.Primary,
+              label: "vent",
+              customId: `sendlink:${
+                JSON.stringify([interaction.channelId!.toString()])
+              }`,
             }],
           }],
         },
