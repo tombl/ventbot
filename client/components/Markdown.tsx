@@ -62,17 +62,20 @@ type Content =
     target?: string;
     timestamp?: string;
     format: string;
+    lang?: string;
   }
   | Content[];
 
-function Node({ content }: { content: Content }) {
+function Node(
+  { allowHtml, content }: { allowHtml: boolean; content: Content },
+) {
   if (typeof content === "string") {
     return <>{content}</>;
   }
   if (Array.isArray(content)) {
     return (
       <>
-        {content.map((c) => <Node content={c} />)}
+        {content.map((c) => <Node allowHtml={allowHtml} content={c} />)}
       </>
     );
   }
@@ -80,35 +83,35 @@ function Node({ content }: { content: Content }) {
     case "br":
       return <br />;
     case "text":
-      return <Node content={content.content!} />;
+      return <Node allowHtml={allowHtml} content={content.content!} />;
     case "em":
       return (
         <em>
-          <Node content={content.content!} />
+          <Node allowHtml={allowHtml} content={content.content!} />
         </em>
       );
     case "underline":
       return (
         <u>
-          <Node content={content.content!} />
+          <Node allowHtml={allowHtml} content={content.content!} />
         </u>
       );
     case "strong":
       return (
         <strong>
-          <Node content={content.content!} />
+          <Node allowHtml={allowHtml} content={content.content!} />
         </strong>
       );
     case "strikethrough":
       return (
         <del>
-          <Node content={content.content!} />
+          <Node allowHtml={allowHtml} content={content.content!} />
         </del>
       );
     case "inlineCode":
       return (
         <code class="p-0.5 text-sm bg-neutral-3">
-          <Node content={content.content!} />
+          <Node allowHtml={allowHtml} content={content.content!} />
         </code>
       );
     case "user":
@@ -125,16 +128,24 @@ function Node({ content }: { content: Content }) {
     case "link":
       return (
         <a href={content.target!} class="underline text-brand-11">
-          <Node content={content.content!} />
+          <Node allowHtml={allowHtml} content={content.content!} />
         </a>
       );
     case "blockQuote":
       return (
         <blockquote class="pl-2 border-l-2 border-neutral-6">
-          <Node content={content.content!} />
+          <Node allowHtml={allowHtml} content={content.content!} />
         </blockquote>
       );
     case "codeBlock":
+      if (content.lang === "rawhtml" && allowHtml) {
+        if (typeof content.content === "string") {
+          return <div dangerouslySetInnerHTML={{ __html: content.content }} />;
+        } else {
+          console.warn("rawhtml code block content is not a string");
+          return null;
+        }
+      }
       return (
         <pre class="p-2 bg-neutral-3 border-1 border-neutral-6">
           <code class="text-sm">{content.content}</code>
@@ -145,7 +156,7 @@ function Node({ content }: { content: Content }) {
     case "spoiler":
       return (
         <Spoiler>
-          <Node content={content.content!} />
+          <Node allowHtml={allowHtml} content={content.content!} />
         </Spoiler>
       );
     case "timestamp": {
@@ -176,9 +187,11 @@ function Node({ content }: { content: Content }) {
       console.warn("Unhandled markdown node", content);
       return (
         <span class="text-error-11">
-          {"content" in content ? <Node content={content.content!} /> : (
-            content.type
-          )}
+          {"content" in content
+            ? <Node allowHtml={allowHtml} content={content.content!} />
+            : (
+              content.type
+            )}
         </span>
       );
   }
@@ -187,14 +200,16 @@ function Node({ content }: { content: Content }) {
 export default function Markdown({
   source,
   extended = false,
+  allowHtml = false,
 }: {
   source: string;
   extended?: boolean;
+  allowHtml?: boolean;
 }) {
   const elements = useMemo(
     () => parse(source.trim(), extended ? "extended" : "normal"),
     [source, extended],
   );
 
-  return <Node content={elements as Content[]} />;
+  return <Node allowHtml={allowHtml} content={elements as Content[]} />;
 }

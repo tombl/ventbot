@@ -38,7 +38,7 @@ export default function (props: PageProps<Topic>) {
   return (
     <Layout title={title}>
       <article>
-        <Markdown extended source={body} />
+        <Markdown allowHtml extended source={body} />
       </article>
     </Layout>
   );

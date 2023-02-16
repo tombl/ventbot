@@ -152,4 +152,4 @@ export const getGuild = memo((id: bigint) => {
   return discord.getGuild(bot, id);
 });
 
-await discord.startBot(bot);
+// await discord.startBot(bot);
