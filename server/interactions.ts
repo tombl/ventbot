@@ -94,33 +94,41 @@ const actionHandlers: Record<
   (interaction: discord.Interaction, ...args: any[]) => Promise<void>
 > = {
   async sendlink(interaction, channelId: string) {
+    const dm = await discord.getDmChannel(bot.bot, interaction.user.id);
+
     const token = createAuthorisation(interaction.user.id, BigInt(channelId));
+
+    const msg = await discord.sendMessage(
+      bot.bot,
+      dm.id,
+      {
+        embeds: [{
+          description:
+            `click the button below to add this channel to your ventbot.
+then, whenever you want to vent, just go to ${host("/").href}.
+(that means you don't need to click this button again on this device)`,
+        }],
+        components: [{
+          type: discord.MessageComponentTypes.ActionRow,
+          components: [{
+            type: discord.MessageComponentTypes.Button,
+            style: discord.ButtonStyles.Link,
+            label: "add to vent",
+            url: host(`/add/${base64.encode(token)}`).href,
+          }],
+        }],
+      },
+    );
+
+    setTimeout(() => {
+      discord.deleteMessage(bot.bot, dm.id, msg.id);
+    }, 1000 * 60 * 5);
 
     await discord.sendInteractionResponse(
       bot.bot,
       interaction.id,
       interaction.token,
-      {
-        type: discord.InteractionResponseTypes.ChannelMessageWithSource,
-        data: {
-          flags: discord.ApplicationCommandFlags.Ephemeral,
-          embeds: [{
-            description:
-              `click the button below to add this channel to your ventbot.
-then, whenever you want to vent, just go to ${host("/").href}.
-(that means you don't need to click this button again on this device)`,
-          }],
-          components: [{
-            type: discord.MessageComponentTypes.ActionRow,
-            components: [{
-              type: discord.MessageComponentTypes.Button,
-              style: discord.ButtonStyles.Link,
-              label: "add to vent",
-              url: host(`/add/${base64.encode(token)}`).href,
-            }],
-          }],
-        },
-      },
+      { type: discord.InteractionResponseTypes.DeferredUpdateMessage },
     );
   },
 

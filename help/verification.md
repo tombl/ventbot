@@ -27,6 +27,6 @@ For example, these factors will change the message's hash:
 These will keep the hash constant:
 • sending multiple messages with different contents.
 
-Therefore, if you don't want one vent today to link back to a previous vent today, choose a different name, use a different device, or clear your cookies.
+Therefore, if you don't want one vent today to link back to a previous vent, come back tomorrow, choose a different name, use a different device, or clear your cookies.
 
 Additionally, if you suspect a vented message of being an impersonation, click *verify* to see its hash, and compare it with the hash of a known real message. If they differ, they were sent on different devices.
