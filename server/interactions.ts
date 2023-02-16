@@ -107,7 +107,8 @@ const actionHandlers: Record<
           embeds: [{
             description:
               `click the button below to add this channel to your ventbot.
-then, whenever you want to vent, just go to ${host("/").href})`,
+then, whenever you want to vent, just go to ${host("/").href}.
+(that means you don't need to click this button again on this device)`,
           }],
           components: [{
             type: discord.MessageComponentTypes.ActionRow,
